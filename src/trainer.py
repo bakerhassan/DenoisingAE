@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import math
-
+import torchio as tio
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -66,7 +66,7 @@ class Trainer:
             self.state["epoch_no"] = self.state["train_it"] // self.state["epoch_len"] + 1
             if self.state["train_it"] % self.state["epoch_len"] == 0:
                 print(f"\nEpoch [{self.state['epoch_no']}]:  ")
-
+            batch = batch['vol'][tio.DATA].squeeze(-1)
             self.state["train_batch"] = move_to(batch, self.device)
             self.state["train_it"] += 1
             self.callback("before_train_step")
