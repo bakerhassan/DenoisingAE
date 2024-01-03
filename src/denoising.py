@@ -111,7 +111,7 @@ def train(trainin_path: str, evaluation_path: str, id: str = "model", noise_res:
     training_dataloader = create_dataset(trainin_path, True, batch_size, num_workers=1)
     eval_dataloader = create_dataset(evaluation_path, True, batch_size, num_workers=1)
     trainer = denoising(id, training_dataloader, eval_dataloader, lr=0.0001, depth=4,
-                        wf=6, noise_std=noise_std, noise_res=noise_res)
+                        wf=6, noise_std=noise_std, noise_res=noise_res,n_input=1)
 
     trainer.train(epoch_len=32, max_epochs=2100, val_epoch_len=32)
 
