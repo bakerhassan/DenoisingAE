@@ -67,7 +67,7 @@ class Trainer:
             if self.state["train_it"] % self.state["epoch_len"] == 0:
                 print(f"\nEpoch [{self.state['epoch_no']}]:  ")
             batch = batch['vol'][tio.DATA].squeeze(-1)
-            self.state["train_batch"] = move_to(batch, self.device)
+            self.state["train_batch"] = batch.to(self.device)
             self.state["train_it"] += 1
             self.callback("before_train_step")
             self.train_step(self)
@@ -100,7 +100,7 @@ class Trainer:
         it = 0
         for batch in dataloader:
             batch = batch['vol'][tio.DATA].squeeze(-1)
-            self.state["val_batch"] = move_to(batch, self.device)
+            self.state["val_batch"] = batch.to(self.device)
             self.callback("before_val_step")
             with torch.no_grad():
                 self.val_step(self)
