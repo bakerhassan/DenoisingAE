@@ -22,6 +22,7 @@ class vol2slice(Dataset):
         subject['ind'] = self.ind
         subject['vol'].data = subject['vol'].data[..., self.ind]
         subject['mask'].data = subject['mask'].data[..., self.ind]
+        subject['label'].data = subject['label'].data[..., self.ind]
         return subject
 
 
@@ -94,7 +95,8 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
         subjects.append(subject)
         counter += 1
     ds = tio.SubjectsDataset(subjects, transform=get_transform())
-    ds = vol2slice(ds)
+    if training:
+        ds = vol2slice(ds)
     ds = DataLoader(ds, batch_size=batch_size, num_workers=num_workers, pin_memory=True,
                     shuffle=training)
 
