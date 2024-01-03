@@ -7,6 +7,7 @@ from tqdm import tqdm
 from denoising import denoising
 from data import BrainDataset
 from cc_filter import connected_components_3d
+from src.create_datasets import create_dataset
 
 
 def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshold=None, get_y=lambda batch: batch[1],
@@ -89,15 +90,14 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
     return ap
 
 
-def evaluate(id: str = "model", split: str = "test", use_cc: bool = True):
-    trainer = denoising(id, data=None, lr=0.0001, depth=4,
+def evaluate(testing_path: str, id: str = "model", split: str = "test", use_cc: bool = True):
+    testing_dataloader = create_dataset(testing_path, True, batch_size=1, num_workers=1)
+    trainer = denoising(id, None, None, lr=0.0001, depth=4,
                         wf=6, noise_std=0.2, noise_res=16)  # Noise parameters don't matter during evaluation.
 
     trainer.load(id)
 
-    dataset = BrainDataset(dataset="brats2021", split=split, n_tumour_patients=None, n_healthy_patients=0)
-
-    results = eval_anomalies_batched(trainer, dataset=dataset, get_scores=trainer.get_scores, return_dice=True,
+    results = eval_anomalies_batched(trainer, dataset=testing_dataloader, get_scores=trainer.get_scores, return_dice=True,
                                      filter_cc=use_cc)
 
     print(f"AP: {results[0]}")
@@ -110,23 +110,18 @@ def evaluate(id: str = "model", split: str = "test", use_cc: bool = True):
 
 
 if __name__ == "__main__":
-
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-id", "--identifier", required=True, type=str, help="identifier for model to evaluate")
     parser.add_argument("-s", "--split", required=True, type=str, help="'train', 'val' or 'test'")
-    parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True, help="Whether to use connected component filtering.")
+    parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
+                        help="Whether to use connected component filtering.")
+    parser.add_argument("-tp", "--testing_path", type=str, help="testing path")
 
     args = parser.parse_args()
 
-    evaluate(id=args.identifier,
+    evaluate(testing_path=args.testing_path,
+             id=args.identifier,
              split=args.split,
              use_cc=args.use_cc)
-
-
-
-
-
-
-
