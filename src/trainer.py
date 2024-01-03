@@ -99,6 +99,7 @@ class Trainer:
         dataloader = dataloader if dataloader is not None else self.val_dataloader
         it = 0
         for batch in dataloader:
+            batch = batch['vol'][tio.DATA].squeeze(-1)
             self.state["val_batch"] = move_to(batch, self.device)
             self.callback("before_val_step")
             with torch.no_grad():

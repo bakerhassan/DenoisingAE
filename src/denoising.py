@@ -41,7 +41,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return res
 
     def get_scores(trainer, batch, median_f=True):
-        x = batch[0]
+        x = batch
         trainer.model = trainer.model.eval()
         with torch.no_grad():
             # Assume it's in batch shape
@@ -60,16 +60,13 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return err.cpu()
 
     def loss_f(trainer, batch, batch_results):
-        y = batch[1]
-        mask = batch[1].sum(dim=1, keepdim=True) > 0.01
-
+        y = batch
+        mask = batch.sum(dim=1, keepdim=True) > 0.01
         return (torch.pow(batch_results - y, 2) * mask.float()).mean()
 
     def forward(trainer, batch):
-        batch[1] = batch[0]  # Clean image is the "target"
-        batch[0] = noise(batch[0].clone())
-
-        return trainer.model(batch[0])
+        batch = noise(batch.clone())
+        return trainer.model(batch)
 
     model = UNet(in_channels=n_input, n_classes=n_input, norm="group", up_mode="upconv", depth=depth, wf=wf,
                  padding=True).to(device)
