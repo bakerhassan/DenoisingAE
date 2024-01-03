@@ -1,8 +1,28 @@
+# Note the majority of this code was taken from: https://github.com/FinnBehrendt/Conditioned-Diffusion-Models-UAD/tree/main repo
 import torchio as tio
 import os
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 import SimpleITK as sitk
+
+
+class vol2slice(Dataset):
+    def __init__(self, ds):
+        self.ds = ds
+        self.counter = 0
+
+    def __len__(self):
+        return len(self.ds)
+
+    def __getitem__(self, index):
+        subject = self.ds.__getitem__(index)
+        low = 0
+        high = subject['vol'].data.shape[-1]
+        self.ind = torch.randint(low, high, size=[1])
+        subject['ind'] = self.ind
+        subject['vol'].data = subject['vol'].data[..., self.ind]
+        subject['mask'].data = subject['mask'].data[..., self.ind]
+        return subject
 
 
 def exclude_empty_slices(image, mask, slice_dim=-1):
@@ -74,6 +94,7 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
         subjects.append(subject)
         counter += 1
     ds = tio.SubjectsDataset(subjects, transform=get_transform())
+    ds = vol2slice(ds)
     ds = DataLoader(ds, batch_size=batch_size, num_workers=num_workers, pin_memory=True,
                     shuffle=training)
 
