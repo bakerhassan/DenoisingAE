@@ -86,7 +86,7 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
             image, label = exclude_empty_slices(sub.data[0].float(), label.data[0].float())
         image = image[None, ...]
         label = label[None, ...]
-        brain_mask = (image > .001)[None, ...]
+        brain_mask = (image > .001)
         subject_dict = {'vol': tio.ScalarImage(tensor=image), 'name': img_file,
                         'label': tio.LabelMap(tensor=label),
                         'mask': tio.LabelMap(tensor=brain_mask)}
