@@ -8,8 +8,8 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from utilities import move_to
-from data_descriptor import DataDescriptor
+from src.utilities import move_to
+from src.data_descriptor import DataDescriptor
 
 
 class Trainer:
