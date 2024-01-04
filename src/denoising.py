@@ -11,12 +11,11 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 
 from src.create_datasets import create_dataset
-from training import simple_train_step, simple_val_step
-from metrics import Loss
-from trainer import Trainer
-from data_descriptor import BrainAEDataDescriptor, DataDescriptor
-from utilities import median_pool, ModelSaver
-from unet import UNet
+from src.training import simple_train_step, simple_val_step
+from src.metrics import Loss
+from src.trainer import Trainer
+from src.utilities import median_pool, ModelSaver
+from src.unet import UNet
 
 
 def denoising(identifier: str, training_dataloader: DataLoader = None, validation_dataloader: DataLoader = None,

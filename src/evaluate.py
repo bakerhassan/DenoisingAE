@@ -7,9 +7,9 @@ import torchio as tio
 from sklearn.metrics import average_precision_score
 from tqdm import tqdm
 
-from denoising import denoising
-from data import BrainDataset
-from cc_filter import connected_components_3d
+from src.denoising import denoising
+from src.data import BrainDataset
+from src.cc_filter import connected_components_3d
 from src.create_datasets import create_dataset
 
 
