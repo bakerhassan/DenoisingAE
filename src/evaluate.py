@@ -31,7 +31,7 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
     i = 0
     for batch in dataset:
         with torch.no_grad():
-            anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(-1))
+            anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2))
         y_ = (batch['label'][tio.DATA].squeeze(-1).view(-1) > 0.5)
         y_hat = anomaly_scores.reshape(-1)
         # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
@@ -59,7 +59,7 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
             for pd in dataset:
                 with torch.no_grad():
-                    anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(-1))
+                    anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2))
                 y_ = (batch['label'][tio.DATA].squeeze(-1).view(-1) > 0.5)
                 # Do CC filtering:
                 anomaly_scores_bin = anomaly_scores > threshold
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-id", "--identifier",default='model', type=str, help="identifier for model to evaluate")
-    parser.add_argument("-s", "--split",default='test',type=str, help="'train', 'val' or 'test'")
+    parser.add_argument("-id", "--identifier", default='model', type=str, help="identifier for model to evaluate")
+    parser.add_argument("-s", "--split", default='test', type=str, help="'train', 'val' or 'test'")
     parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
                         help="Whether to use connected component filtering.")
     parser.add_argument("-te", "--eval_testing_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data/heldout/val', help="eval testing path")
