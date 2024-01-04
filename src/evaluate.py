@@ -40,16 +40,18 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
         i += y_.numel()
 
         sub_ap.append(average_precision_score(y_, y_hat))
-        if return_dice:
+        if return_dice and threshold is not None:
             dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
+    y_true_, y_pred_ = torch.tensor(y_true_), torch.tensor(y_pred_)
     ap = average_precision_score(y_true_, y_pred_)
     if return_dice:
         with torch.no_grad():
             y_true_ = y_true_.to(trainer.device)
             y_pred_ = y_pred_.to(trainer.device)
             dices = [dice(y_true_ > 0.5, y_pred_ > x).cpu().item() for x in tqdm(dice_thresholds)]
-        max_dice, threshold = max(zip(dices, dice_thresholds), key=lambda x: x[0])
-
+        max_dice, threshold__ = max(zip(dices, dice_thresholds), key=lambda x: x[0])
+        if threshold is None:
+            threshold = threshold__
         sub_ap_cc, dice_sub_cc = [], []
         if filter_cc:
             # Now that we have the threshold we can do some filtering and recalculate the Dice
@@ -71,7 +73,7 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
                 sub_ap.append(average_precision_score(y_, y_hat))
                 dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
                 i += y_.numel()
-
+            y_true_, y_pred_ = torch.tensor(y_true_), torch.tensor(y_pred_)
             with torch.no_grad():
                 y_true_ = y_true_.to(trainer.device)
                 y_pred_ = y_pred_.to(trainer.device)
