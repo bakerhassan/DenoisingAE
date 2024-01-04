@@ -3,7 +3,7 @@ from typing import Optional
 
 import torch
 
-from data import BrainDataset
+from src.data import BrainDataset
 
 
 class DataDescriptor:
