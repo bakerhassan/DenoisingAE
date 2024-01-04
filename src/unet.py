@@ -25,8 +25,8 @@ from math import sqrt
 import torch
 from torch import nn
 import torch.nn.functional as F
-from swish import CustomSwish
-from ws_conv import WNConv2d
+from src.swish import CustomSwish
+from src.ws_conv import WNConv2d
 
 
 def get_groups(channels: int) -> int:
