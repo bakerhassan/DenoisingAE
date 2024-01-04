@@ -26,8 +26,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
     sub_ap, dice_sub = [], []
     dice_thresholds = [x / 1000 for x in range(1000)] if threshold is None else [threshold]
-    y_true_ = torch.zeros(240 * 240 * len(dataset), dtype=torch.half)
-    y_pred_ = torch.zeros(240 * 240 * len(dataset), dtype=torch.half)
+    y_true_ = []
+    y_pred_ = []
     i = 0
     for batch in dataset:
         with torch.no_grad():
@@ -35,8 +35,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
         y_ = (batch['label'][tio.DATA].squeeze(-1).view(-1) > 0.5)
         y_hat = anomaly_scores.reshape(-1)
         # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
-        y_true_[i:i + y_.numel()] = y_.half()
-        y_pred_[i:i + y_hat.numel()] = y_hat.half()
+        y_true_.extend(y_.half())
+        y_pred_.extend(y_hat.half())
         i += y_.numel()
 
         sub_ap.append(average_precision_score(y_, y_hat))
@@ -54,8 +54,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
         if filter_cc:
             # Now that we have the threshold we can do some filtering and recalculate the Dice
             i = 0
-            y_true_ = torch.zeros(240 * 240 * len(dataset), dtype=torch.bool)
-            y_pred_ = torch.zeros(240 * 240 * len(dataset), dtype=torch.bool)
+            y_true_ = []
+            y_pred_ = []
 
             for pd in dataset:
                 with torch.no_grad():
@@ -66,8 +66,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
                 anomaly_scores_bin = connected_components_3d(anomaly_scores_bin.squeeze(dim=1)).unsqueeze(dim=1)
 
                 y_hat = anomaly_scores_bin.reshape(-1)
-                y_true_[i:i + y_.numel()] = y_
-                y_pred_[i:i + y_hat.numel()] = y_hat
+                y_true_.extend(y_.half())
+                y_pred_.extend(y_hat.half())
                 sub_ap.append(average_precision_score(y_, y_hat))
                 dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
                 i += y_.numel()
@@ -121,8 +121,10 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--split", default='test', type=str, help="'train', 'val' or 'test'")
     parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
                         help="Whether to use connected component filtering.")
-    parser.add_argument("-te", "--eval_testing_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data/heldout/val', help="eval testing path")
-    parser.add_argument("-tp", "--testing_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data/heldout', help="testing path")
+    parser.add_argument("-te", "--eval_testing_path", type=str,
+                        default='/lustre/cniel/BraTS2021_Training_Data/heldout/val', help="eval testing path")
+    parser.add_argument("-tp", "--testing_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/heldout',
+                        help="testing path")
 
     args = parser.parse_args()
 
