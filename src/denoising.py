@@ -125,8 +125,8 @@ if __name__ == "__main__":
     parser.add_argument("-ns", "--noise_std", type=float, default=0.2, help="noise magnitude.")
     parser.add_argument("-s", "--seed", type=int, default=0, help="random seed.")
     parser.add_argument("-bs", "--batch_size", type=int, default=16, help="model training batch size")
-    parser.add_argument("-tp", "--training_path", type=str, help="training path")
-    parser.add_argument("-ep", "--evaluation_path", type=str, help="evaluation path.")
+    parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/val',help="training path")
+    parser.add_argument("-ep", "--evaluation_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data', help="evaluation path.")
     args = parser.parse_args()
 
     train(

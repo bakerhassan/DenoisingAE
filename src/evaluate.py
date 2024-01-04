@@ -117,12 +117,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-id", "--identifier", required=True, type=str, help="identifier for model to evaluate")
-    parser.add_argument("-s", "--split", required=True, type=str, help="'train', 'val' or 'test'")
+    parser.add_argument("-id", "--identifier",default='model', type=str, help="identifier for model to evaluate")
+    parser.add_argument("-s", "--split",default='test',type=str, help="'train', 'val' or 'test'")
     parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
                         help="Whether to use connected component filtering.")
-    parser.add_argument("-te", "--eval_testing_path", type=str, help="eval testing path")
-    parser.add_argument("-tp", "--testing_path", type=str, help="testing path")
+    parser.add_argument("-te", "--eval_testing_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data/heldout/eval', help="eval testing path")
+    parser.add_argument("-tp", "--testing_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data/heldout', help="testing path")
 
     args = parser.parse_args()
 
