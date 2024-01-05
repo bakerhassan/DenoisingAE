@@ -28,56 +28,58 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
     dice_thresholds = [x / 1000 for x in range(1000)] if threshold is None else [threshold]
     y_true_ = []
     y_pred_ = []
-    i = 0
-    for batch in dataset:
-        with torch.no_grad():
-            anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2))
-        y_ = (batch['label'][tio.DATA].squeeze(-1).view(-1) > 0.5)
-        y_hat = anomaly_scores.reshape(-1)
-        # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
-        y_true_.extend(y_.half())
-        y_pred_.extend(y_hat.half())
-        i += y_.numel()
+    counter = 0
+    try:
+        for batch in dataset:
+            with torch.no_grad():
+                anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda'))
+            y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
+            y_hat = anomaly_scores.reshape(-1)
+            # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
+            y_true_.append(y_.cpu())
+            y_pred_.append(y_hat.cpu())
 
-        sub_ap.append(average_precision_score(y_, y_hat))
-        if return_dice and threshold is not None:
-            dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
-    y_true_, y_pred_ = torch.tensor(y_true_), torch.tensor(y_pred_)
+            sub_ap.append(average_precision_score(y_, y_hat))
+            if return_dice and threshold is not None:
+                dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
+            print("done with subject: " ,counter)
+            counter +=1
+    except Exception as e:
+        print(e)
+    y_true_, y_pred_ = torch.cat(y_true_,dim=0).cpu(), torch.cat(y_pred_,dim=0).cpu()
     ap = average_precision_score(y_true_, y_pred_)
     if return_dice:
-        with torch.no_grad():
-            y_true_ = y_true_.to(trainer.device)
-            y_pred_ = y_pred_.to(trainer.device)
-            dices = [dice(y_true_ > 0.5, y_pred_ > x).cpu().item() for x in tqdm(dice_thresholds)]
-        max_dice, threshold__ = max(zip(dices, dice_thresholds), key=lambda x: x[0])
-        if threshold is None:
-            threshold = threshold__
         sub_ap_cc, dice_sub_cc = [], []
+        if threshold is None:
+            with torch.no_grad():
+                y_true_ = y_true_.to(trainer.device)
+                y_pred_ = y_pred_.to(trainer.device)
+                dices = [dice(y_true_ > 0.5, y_pred_ > x).cpu().item() for x in tqdm(dice_thresholds)]
+            max_dice, threshold = max(zip(dices, dice_thresholds), key=lambda x: x[0])
+        max_dice = dice(y_true_ > .5, y_pred_ > threshold).cpu().item()
         if filter_cc:
             # Now that we have the threshold we can do some filtering and recalculate the Dice
             i = 0
             y_true_ = []
             y_pred_ = []
 
-            for pd in dataset:
+            for batch in dataset:
                 with torch.no_grad():
-                    anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2))
-                y_ = (batch['label'][tio.DATA].squeeze(-1).view(-1) > 0.5)
+                    anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda'))
+                y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
                 # Do CC filtering:
                 anomaly_scores_bin = anomaly_scores > threshold
                 anomaly_scores_bin = connected_components_3d(anomaly_scores_bin.squeeze(dim=1)).unsqueeze(dim=1)
 
                 y_hat = anomaly_scores_bin.reshape(-1)
-                y_true_.extend(y_.half())
-                y_pred_.extend(y_hat.half())
-                sub_ap.append(average_precision_score(y_, y_hat))
-                dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
+                y_true_.append(y_.cpu())
+                y_pred_.append(y_hat.cpu())
+                sub_ap_cc.append(average_precision_score(y_, y_hat))
+                dice_sub_cc.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
                 i += y_.numel()
-            y_true_, y_pred_ = torch.tensor(y_true_), torch.tensor(y_pred_)
+            y_true_, y_pred_ = torch.cat(y_true_, dim=0).cpu(), torch.cat(y_pred_, dim=0).cpu()
             with torch.no_grad():
-                y_true_ = y_true_.to(trainer.device)
-                y_pred_ = y_pred_.to(trainer.device)
-                post_cc_max_dice = dice(y_true_, y_pred_).cpu().item()
+                post_cc_max_dice = dice(y_true_ > .5, y_pred_ > threshold).cpu().item()
 
             return ap, max_dice, threshold, sub_ap, dice_sub, post_cc_max_dice, sub_ap_cc, dice_sub_cc
         return ap, max_dice, threshold, sub_ap, dice_sub
@@ -85,8 +87,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
 
 def evaluate(testing_path: str, eval_testing_path: str, id: str = "model", split: str = "test", use_cc: bool = True):
-    testing_dataloader = create_dataset(testing_path, False, batch_size=1, num_workers=1)
-    eval_testing_dataloader = create_dataset(eval_testing_path, False, batch_size=1, num_workers=1)
+    testing_dataloader = create_dataset(testing_path, False, batch_size=1, num_workers=0)
+    eval_testing_dataloader = create_dataset(eval_testing_path, False, batch_size=1, num_workers=0)
     trainer = denoising(id, None, None, lr=0.0001, depth=4,
                         wf=6, noise_std=0.2, noise_res=16,
                         n_input=1)  # Noise parameters don't matter during evaluation.
