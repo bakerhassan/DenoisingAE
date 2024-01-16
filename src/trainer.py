@@ -95,6 +95,8 @@ class Trainer:
         dataloader = dataloader if dataloader is not None else self.val_dataloader
         it = 0
         for batch in dataloader:
+            batch, slice_idx = batch
+            self.state['slice_idx'] = slice_idx
             batch = batch['vol'][tio.DATA].squeeze(-1)
             self.state["val_batch"] = batch.to(self.device)
             self.callback("before_val_step")
