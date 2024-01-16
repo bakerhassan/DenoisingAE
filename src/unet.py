@@ -207,6 +207,7 @@ def process_hooks(patch2loc: torch.nn.DataParallel):
 
 def save_output_feature_hook():
     def hook(model, input, output):
+        global features
         features = output.cpu()
 
     return hook
