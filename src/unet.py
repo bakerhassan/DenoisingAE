@@ -114,7 +114,8 @@ class UNet(nn.Module):
                 x = F.avg_pool2d(x, 2)
         if self.patch2loc:
             features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape[-2:])
-            x = torch.cat([x, features])
+            featueres = features.to(x)
+            x = torch.cat([x, features],dim=1)
         return x, blocks
 
     def forward_up_without_last(self, x, blocks):
