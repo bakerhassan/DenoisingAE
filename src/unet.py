@@ -113,7 +113,7 @@ class UNet(nn.Module):
             if i != len(self.down_path) - 1:
                 x = F.avg_pool2d(x, 2)
         if self.patch2loc:
-            features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape)
+            features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape[-2:])
             x = torch.cat([x, features])
         return x, blocks
 
@@ -213,17 +213,18 @@ def save_output_feature_hook():
 
 
 def patch2loc_features(input: torch.Tensor, patch2loc, slice_idxs, target_shape):
+    global features
     patches, kwargs = patch_tensor(input, slice_idxs)
     patch2loc(patches, kwargs)
+    features = features.reshape(input.shape[0], -1, features.shape[-1])
     return reshape_with_padding(features, target_shape)
 
 
 def reshape_with_padding(input: torch.Tensor, target_shape: Tuple[int]):
-    original_shape = input.shape
-    assert np.prod(target_shape) > input.numel(), "must: target_shape.numel() > input.numel"
     # calculating padding:
-    padded_input_flat = F.pad(input.flatten(), np.prod(target_shape) - input.numel(), mode='constant', value=0)
-    return padded_input_flat.reshape(target_shape)
+    padded_input_flat = F.pad(input.flatten(), (0, np.prod(target_shape) - input.numel() % np.prod(target_shape)),
+                              mode='constant', value=0)
+    return padded_input_flat.reshape((-1,) + target_shape)
 
 
 def patch_tensor(input_tensor: torch.Tensor, slice_idxs: torch.Tensor) -> torch.Tensor:
