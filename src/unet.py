@@ -225,7 +225,7 @@ def reshape_with_padding(input: torch.Tensor, target_shape: Tuple[int]):
     # calculating padding:
     padded_input_flat = F.pad(input.flatten(), (0, np.prod(target_shape) - input.numel() % np.prod(target_shape)),
                               mode='constant', value=0)
-    return padded_input_flat.reshape((input.shape[0], -1,) + (30, 30,))
+    return padded_input_flat.reshape((input.shape[0], -1,) + target_shape)
 
 
 def patch_tensor(input_tensor: torch.Tensor, slice_idxs: torch.Tensor) -> torch.Tensor:
