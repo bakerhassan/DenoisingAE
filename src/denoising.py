@@ -1,5 +1,4 @@
 #  Copyright (C) 2022 Canon Medical Systems Corporation. All rights reserved
-from typing import Union, Optional
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -69,9 +68,10 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return trainer.model(batch)
 
     patch2loc_model = patch2loc()
+    patch2loc_model = torch.nn.DataParallel(patch2loc_model)
+    patch2loc_model = patch2loc_model.to(device)
     patch2loc_model.load_state_dict(
         torch.load('/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2.pth', map_location=device))
-    patch2loc_model = patch2loc_model.to(device)
     for param in patch2loc_model.parameters():
         param.requires_grad = False
     patch2loc_model.eval()
