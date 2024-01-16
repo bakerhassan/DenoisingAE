@@ -21,12 +21,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from math import sqrt
+from typing import Tuple
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 from src.swish import CustomSwish
 from src.ws_conv import WNConv2d
+
+import torchvision.transforms as transforms
+
+features = {}
+key = 'dump'
 
 
 def get_groups(channels: int) -> int:
@@ -53,7 +59,8 @@ class UNet(nn.Module):
             wf=6,
             padding=False,
             norm="group",
-            up_mode='upconv'):
+            up_mode='upconv',
+            patch2loc=None):
         """
         A modified U-Net implementation [1].
 
@@ -78,6 +85,9 @@ class UNet(nn.Module):
         assert up_mode in ('upconv', 'upsample')
         self.padding = padding
         self.depth = depth
+        self.patch2loc = patch2loc
+        if self.patch2loc is not None:
+            process_hooks(self.patch2loc)
         prev_channels = in_channels
         self.down_path = nn.ModuleList()
         for i in range(depth):
@@ -96,14 +106,16 @@ class UNet(nn.Module):
         self.last = nn.Conv2d(prev_channels, n_classes, kernel_size=1)
 
     def forward_down(self, x):
-
+        input = x
         blocks = []
         for i, down in enumerate(self.down_path):
             x = down(x)
             blocks.append(x)
             if i != len(self.down_path) - 1:
                 x = F.avg_pool2d(x, 2)
-
+        if self.patch2loc:
+            features = patch2loc_features(input, self.patch2loc, x.shape)
+            x = torch.cat([x, features])
         return x, blocks
 
     def forward_up_without_last(self, x, blocks):
@@ -185,3 +197,54 @@ class UNetUpBlock(nn.Module):
         out = self.conv_block(out)
 
         return out
+
+
+import numpy as np
+
+
+def process_hooks(patch2loc):
+    patch2loc._modules['branch2'][8].register_forward_hook(save_output_feature_hook(key))
+
+
+def save_output_feature_hook(self, key):
+    def hook(model, input, output):
+        features[key] = output.cpu()
+
+    return hook
+
+
+def patch2loc_features(input: torch.Tensor, patch2loc, target_shape):
+    patch2loc(patch_tensor(input))
+    return reshape_with_padding(features[key], target_shape)
+
+
+def reshape_with_padding(input: torch.Tensor, target_shape: Tuple[int]):
+    original_shape = input.shape
+    assert np.prod(target_shape) > input.numel(), "must: target_shape.numel() > input.numel"
+    # calculating padding:
+    padded_input_flat = F.pad(input.flatten(), np.prod(target_shape) - input.numel(), mode='constant', value=0)
+    return padded_input_flat.reshape(target_shape)
+
+
+def patch_tensor(input_tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Patch an input tensor into non-overlapping patches along the W and H dimensions.
+
+    Args:
+    - input_tensor (torch.Tensor): Input tensor.
+
+    Returns:
+    - torch.Tensor: Patches tensor.
+    """
+
+    # Calculate patch size as 0.125 times the original shape along W and H dimensions
+    patch_size_w = int(input_tensor.shape[2] * 0.125)
+    patch_size_h = int(input_tensor.shape[3] * 0.125)
+
+    # Use unfold to create non-overlapping patches along W and H dimensions
+    patches = input_tensor.unfold(2, patch_size_w, patch_size_w).unfold(3, patch_size_h, patch_size_h)
+
+    patches = patches.contiguous().view(input_tensor.size(0), input_tensor.size(1), -1, patch_size_w, patch_size_h)
+    patches = transforms.Resize((64, 64))(patches)
+    patches = torch.quantile(patches, 98)
+    return patches

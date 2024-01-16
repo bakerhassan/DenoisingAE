@@ -16,6 +16,7 @@ from src.metrics import Loss
 from src.trainer import Trainer
 from src.utilities import median_pool, ModelSaver
 from src.unet import UNet
+from src.patch2loc import patch2loc
 
 
 def denoising(identifier: str, training_dataloader: DataLoader = None, validation_dataloader: DataLoader = None,
@@ -67,8 +68,15 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         batch = noise(batch.clone())
         return trainer.model(batch)
 
+    patch2loc_model = patch2loc()
+    patch2loc_model.load_state_dict(
+        '/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2.pth')
+    patch2loc_model = patch2loc_model.to(device)
+    for param in patch2loc_model.parameters():
+        param.requires_grad = False
+    patch2loc_model.eval()
     model = UNet(in_channels=n_input, n_classes=n_input, norm="group", up_mode="upconv", depth=depth, wf=wf,
-                 padding=True).to(device)
+                 padding=True, patch2loc=patch2loc_model).to(device)
 
     train_step = partial(simple_train_step, forward=forward, loss_f=loss_f)
     val_step = partial(simple_val_step, forward=forward, loss_f=loss_f)
@@ -110,7 +118,7 @@ def train(trainin_path: str, evaluation_path: str, id: str = "model", noise_res:
     training_dataloader = create_dataset(trainin_path, True, batch_size, num_workers=1)
     eval_dataloader = create_dataset(evaluation_path, True, batch_size, num_workers=1)
     trainer = denoising(id, training_dataloader, eval_dataloader, lr=0.0001, depth=4,
-                        wf=6, noise_std=noise_std, noise_res=noise_res,n_input=1)
+                        wf=6, noise_std=noise_std, noise_res=noise_res, n_input=1)
 
     trainer.train(epoch_len=32, max_epochs=2100, val_epoch_len=32)
 
@@ -124,8 +132,10 @@ if __name__ == "__main__":
     parser.add_argument("-ns", "--noise_std", type=float, default=0.2, help="noise magnitude.")
     parser.add_argument("-s", "--seed", type=int, default=0, help="random seed.")
     parser.add_argument("-bs", "--batch_size", type=int, default=16, help="model training batch size")
-    parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/val',help="training path")
-    parser.add_argument("-ep", "--evaluation_path", type=str,default='/lustre/cniel/BraTS2021_Training_Data', help="evaluation path.")
+    parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/val',
+                        help="training path")
+    parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data',
+                        help="evaluation path.")
     args = parser.parse_args()
 
     train(
