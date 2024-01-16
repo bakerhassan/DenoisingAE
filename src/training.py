@@ -21,7 +21,7 @@ def simple_train_step(trainer, forward, loss_f):
     slice_idx = {}
     if 'slice_idx' in state:
         slice_idx['slice_idx'] = state['slice_idx']
-    batch_result = forward(trainer, batch, slice_idx)
+    batch_result = forward(trainer, batch, **slice_idx)
     # Want to detach so that we don't accumulate GPU memory as we go through batches.
     state["train_batch_result"] = detach(batch_result)
     loss = loss_f(trainer, batch, batch_result)
