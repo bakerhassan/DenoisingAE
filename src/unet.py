@@ -114,7 +114,7 @@ class UNet(nn.Module):
                 x = F.avg_pool2d(x, 2)
         if self.patch2loc:
             features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape[-2:])
-            featueres = features.to(x)
+            features = features.to(x)
             x = torch.cat([x, features],dim=1)
         return x, blocks
 
