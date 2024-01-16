@@ -31,8 +31,7 @@ from src.ws_conv import WNConv2d
 
 import torchvision.transforms as transforms
 
-features = {}
-key = 'dump'
+features = None
 
 
 def get_groups(channels: int) -> int:
@@ -203,19 +202,19 @@ import numpy as np
 
 
 def process_hooks(patch2loc: torch.nn.DataParallel):
-    patch2loc.module._modules['branch2'][8].register_forward_hook(save_output_feature_hook(key))
+    patch2loc.module._modules['branch2'][8].register_forward_hook(save_output_feature_hook())
 
 
-def save_output_feature_hook(key):
+def save_output_feature_hook():
     def hook(model, input, output):
-        features[key] = output.cpu()
+        features = output.cpu()
 
     return hook
 
 
 def patch2loc_features(input: torch.Tensor, patch2loc, target_shape):
     patch2loc(patch_tensor(input))
-    return reshape_with_padding(features[key], target_shape)
+    return reshape_with_padding(features, target_shape)
 
 
 def reshape_with_padding(input: torch.Tensor, target_shape: Tuple[int]):
