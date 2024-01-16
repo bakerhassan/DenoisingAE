@@ -1,7 +1,6 @@
 import torchvision
 from torch import nn
 import torch
-import shared.globals as Globals
 from torch.nn import functional as F
 
 import torch.distributions as td
@@ -21,7 +20,7 @@ class patch2loc(nn.Module):
         else:
             self.net._modules['fc'] = nn.Linear(2048, 2048)
             output_dim = 2
-        n_channels = Globals.num_channels
+        n_channels = 1
         self.bn = nn.BatchNorm2d(n_channels)  # Adjust the number of input channels (3 in this example)
         new_conv1 = nn.Conv2d(n_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.net.conv1 = new_conv1
@@ -36,9 +35,9 @@ class patch2loc(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, Globals.latent_dim),
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(Globals.latent_dim, output_dim)
+            nn.Linear(32, output_dim)
         )
 
         self.branch2 = nn.Sequential(
@@ -50,12 +49,12 @@ class patch2loc(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, Globals.latent_dim),
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(Globals.latent_dim, output_dim)
+            nn.Linear(32, output_dim)
         )
 
-        self.mean_penultimate = nn.Linear(Globals.latent_dim, 6)
+        self.mean_penultimate = nn.Linear(32, 6)
         self.activations = activations
 
     def forward(self, x, *kargs, **kwargs):
