@@ -104,7 +104,7 @@ class UNet(nn.Module):
             self.up_path.append(
                 UNetUpBlock(prev_channels, num_channels, up_mode, padding, norm=norm)
             )
-            prev_channels = 2 ** (wf + i)
+            prev_channels = num_channels
 
         self.last = nn.Conv2d(prev_channels, n_classes, kernel_size=1)
 
