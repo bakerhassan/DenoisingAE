@@ -99,6 +99,7 @@ class UNet(nn.Module):
         for i in reversed(range(depth - 1)):
             if self.patch2loc is not None and i == depth - 2:
                 num_channels = 2 ** (wf + i) + 3
+                prev_channels += 3
             else:
                 num_channels = 2 ** (wf + i)
             self.up_path.append(
@@ -125,6 +126,8 @@ class UNet(nn.Module):
     def forward_up_without_last(self, x, blocks):
         for i, up in enumerate(self.up_path):
             skip = blocks[-i - 2]
+            if self.patch2loc and i == 1:
+                skip = torch.cat([skip, torch.zeros((skip.shape[0], 3, skip.shape[2], skip.shape[3])).to(skip)], dim=1)
             x = up(x, skip)
 
         return x
