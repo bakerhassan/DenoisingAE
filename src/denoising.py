@@ -70,7 +70,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
 
     patch2loc_model = patch2loc()
     patch2loc_model.load_state_dict(
-        '/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2.pth')
+        torch.load('/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2.pth', map_location=device))
     patch2loc_model = patch2loc_model.to(device)
     for param in patch2loc_model.parameters():
         param.requires_grad = False
