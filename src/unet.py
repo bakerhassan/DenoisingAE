@@ -97,8 +97,12 @@ class UNet(nn.Module):
 
         self.up_path = nn.ModuleList()
         for i in reversed(range(depth - 1)):
+            if self.patch2loc is not None and i == depth - 1:
+                num_channels = 2 ** (wf + i) + 3
+            else:
+                num_channels = 2 ** (wf + i)
             self.up_path.append(
-                UNetUpBlock(prev_channels, 2 ** (wf + i), up_mode, padding, norm=norm)
+                UNetUpBlock(prev_channels, num_channels, up_mode, padding, norm=norm)
             )
             prev_channels = 2 ** (wf + i)
 
@@ -115,7 +119,7 @@ class UNet(nn.Module):
         if self.patch2loc:
             features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape[-2:])
             features = features.to(x)
-            x = torch.cat([x, features],dim=1)
+            x = torch.cat([x, features], dim=1)
         return x, blocks
 
     def forward_up_without_last(self, x, blocks):
