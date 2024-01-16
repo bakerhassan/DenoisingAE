@@ -243,8 +243,7 @@ def patch_tensor(input_tensor: torch.Tensor) -> torch.Tensor:
     # Use unfold to create non-overlapping patches along W and H dimensions
     patches = input_tensor.unfold(2, patch_size_w, patch_size_w).unfold(3, patch_size_h, patch_size_h)
 
-    patches = patches.contiguous().view(input_tensor.size(0), input_tensor.size(1), -1, patch_size_w, patch_size_h)
-    patches = patches.reshape(patches.size(0) * patches.size(2), patches.size(1), patch_size_w, patch_size_h)
-    patches = transforms.Resize((64, 64))(patches)
-    patches = patches/torch.quantile(patches, 98)
+    patches = patches.contiguous().view(patches.size(0)*patches.size(2) * patches.size(3), patch_size_w, patch_size_h)
+    patches = transforms.Resize((64, 64), antialias=True)(patches).unsqueeze(1)
+    patches = patches/torch.quantile(patches, .98)
     return patches
