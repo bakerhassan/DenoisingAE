@@ -206,7 +206,7 @@ def process_hooks(patch2loc: torch.nn.DataParallel):
     patch2loc.module._modules['branch2'][8].register_forward_hook(save_output_feature_hook(key))
 
 
-def save_output_feature_hook(self, key):
+def save_output_feature_hook(key):
     def hook(model, input, output):
         features[key] = output.cpu()
 
