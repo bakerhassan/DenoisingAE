@@ -70,7 +70,7 @@ def get_transform():
 
 def create_dataset(images_path: str, training: bool, batch_size: int, num_workers: int = 1):
     # Get a list of image files
-    image_files = sorted([f for f in os.listdir(images_path) if f.endswith('.nii.gz') and f.find('seg') == -1])
+    image_files = sorted([f for f in os.listdir(images_path) if f.endswith('.nii.gz') and f.find('seg') == -1])[10:]
 
     # Get a list of corresponding mask files
     mask_files = sorted([f.replace('t1', 'seg') for f in image_files])
