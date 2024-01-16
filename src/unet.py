@@ -104,7 +104,7 @@ class UNet(nn.Module):
 
         self.last = nn.Conv2d(prev_channels, n_classes, kernel_size=1)
 
-    def forward_down(self, x):
+    def forward_down(self, x, slice_idxs):
         input = x
         blocks = []
         for i, down in enumerate(self.down_path):
@@ -113,7 +113,7 @@ class UNet(nn.Module):
             if i != len(self.down_path) - 1:
                 x = F.avg_pool2d(x, 2)
         if self.patch2loc:
-            features = patch2loc_features(input, self.patch2loc, x.shape)
+            features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape)
             x = torch.cat([x, features])
         return x, blocks
 
@@ -124,17 +124,17 @@ class UNet(nn.Module):
 
         return x
 
-    def forward_without_last(self, x):
-        x, blocks = self.forward_down(x)
+    def forward_without_last(self, x, slice_idxs):
+        x, blocks = self.forward_down(x, slice_idxs)
         x = self.forward_up_without_last(x, blocks)
         return x
 
-    def forward(self, x):
-        x = self.get_features(x)
+    def forward(self, x, slice_idxs):
+        x = self.get_features(x, slice_idxs)
         return self.last(x)
 
-    def get_features(self, x):
-        return self.forward_without_last(x)
+    def get_features(self, x, slice_idxs):
+        return self.forward_without_last(x, slice_idxs)
 
 
 class UNetConvBlock(nn.Module):
@@ -212,8 +212,9 @@ def save_output_feature_hook():
     return hook
 
 
-def patch2loc_features(input: torch.Tensor, patch2loc, target_shape):
-    patch2loc(patch_tensor(input))
+def patch2loc_features(input: torch.Tensor, patch2loc, slice_idxs, target_shape):
+    patches, kwargs = patch_tensor(input, slice_idxs)
+    patch2loc(patches, kwargs)
     return reshape_with_padding(features, target_shape)
 
 
@@ -225,7 +226,7 @@ def reshape_with_padding(input: torch.Tensor, target_shape: Tuple[int]):
     return padded_input_flat.reshape(target_shape)
 
 
-def patch_tensor(input_tensor: torch.Tensor) -> torch.Tensor:
+def patch_tensor(input_tensor: torch.Tensor, slice_idxs: torch.Tensor) -> torch.Tensor:
     """
     Patch an input tensor into non-overlapping patches along the W and H dimensions.
 
@@ -243,7 +244,9 @@ def patch_tensor(input_tensor: torch.Tensor) -> torch.Tensor:
     # Use unfold to create non-overlapping patches along W and H dimensions
     patches = input_tensor.unfold(2, patch_size_w, patch_size_w).unfold(3, patch_size_h, patch_size_h)
 
-    patches = patches.contiguous().view(patches.size(0)*patches.size(2) * patches.size(3), patch_size_w, patch_size_h)
+    patches = patches.contiguous().view(patches.size(0) * patches.size(2) * patches.size(3), patch_size_w, patch_size_h)
     patches = transforms.Resize((64, 64), antialias=True)(patches).unsqueeze(1)
-    patches = patches/torch.quantile(patches, .98)
-    return patches
+
+    kwargs = {}
+    kwargs['position'] = torch.repeat_interleave(input_tensor, repeats=64)
+    return patches, kwargs

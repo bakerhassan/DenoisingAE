@@ -11,13 +11,17 @@ def detach(x):
 
 def simple_train_step(trainer, forward, loss_f):
     state = trainer.state
-    accumulation_steps = state["accumulation_steps"] # Accumulate gradients and only update model parameters every `accumulation_steps`th step.
+    accumulation_steps = state[
+        "accumulation_steps"]  # Accumulate gradients and only update model parameters every `accumulation_steps`th step.
 
     if state["train_it"] % accumulation_steps == 0:
         trainer.optimiser.zero_grad()
 
     batch = state["train_batch"]
-    batch_result = forward(trainer, batch)
+    slice_idx = {}
+    if 'slice_idx' in state:
+        slice_idx['slice_idx'] = state['slice_idx']
+    batch_result = forward(trainer, batch, slice_idx)
     # Want to detach so that we don't accumulate GPU memory as we go through batches.
     state["train_batch_result"] = detach(batch_result)
     loss = loss_f(trainer, batch, batch_result)
@@ -27,7 +31,7 @@ def simple_train_step(trainer, forward, loss_f):
         if torch.isnan(loss).sum() >= 1:
             raise ValueError("NaN loss, stopping...")
 
-    if loss.requires_grad: # Check whether gradients are disabled (e.g. during evaluation).
+    if loss.requires_grad:  # Check whether gradients are disabled (e.g. during evaluation).
         loss.backward()
         if state["train_it"] % accumulation_steps == accumulation_steps - 1:
             torch.nn.utils.clip_grad.clip_grad_norm_(trainer.model.parameters(), max_norm=0.5)
@@ -35,11 +39,7 @@ def simple_train_step(trainer, forward, loss_f):
 
 
 def simple_val_step(trainer, forward, loss_f):
-
     state = trainer.state
     with torch.no_grad():
         y_pred = forward(trainer, state["val_batch"])
     state["val_batch_result"] = y_pred
-
-
-

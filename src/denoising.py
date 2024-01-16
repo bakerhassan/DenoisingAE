@@ -63,9 +63,10 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         mask = batch.sum(dim=1, keepdim=True) > 0.01
         return (torch.pow(batch_results - y, 2) * mask.float()).mean()
 
-    def forward(trainer, batch):
+    def forward(trainer, batch,**kwargs):
+
         batch = noise(batch.clone())
-        return trainer.model(batch)
+        return trainer.model(batch,kwargs)
 
     patch2loc_model = patch2loc(position_conditional=True)
     patch2loc_model = torch.nn.DataParallel(patch2loc_model)

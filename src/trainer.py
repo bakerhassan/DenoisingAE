@@ -31,7 +31,6 @@ class Trainer:
 
         self.reset_state()
 
-
     def reset_state(self, params: dict = {}):
         self.state = {}
         self.state["callbacks"] = self.callback_dict
@@ -42,27 +41,25 @@ class Trainer:
 
         self.state.update(params)
 
-
     def set_up_tensorboard(self):
         dt_string = datetime.now().strftime("%b%d__%H-%M-%S")
-        prefix = self.state["identifier"]+"_" if "identifier" in self.state else ""
+        prefix = self.state["identifier"] + "_" if "identifier" in self.state else ""
         logdir = Path(__file__).parent.parent / "runs" / (prefix + dt_string)
         logdir.mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=logdir)
-
 
     def callback(self, trigger_key: str):
         if trigger_key in self.state["callbacks"]:
             for c in self.state["callbacks"][trigger_key]:
                 c(self)
 
-
     def train_epoch(self):
         self.model.train()
         self.callback("before_train_epoch")
 
         for batch in self.train_dataloader:
-
+            batch, slice_idx = batch
+            self.state['slice_idx'] = slice_idx
             self.state["epoch_no"] = self.state["train_it"] // self.state["epoch_len"] + 1
             if self.state["train_it"] % self.state["epoch_len"] == 0:
                 print(f"\nEpoch [{self.state['epoch_no']}]:  ")
@@ -92,7 +89,6 @@ class Trainer:
 
         return self
 
-
     def val_epoch(self, dataloader=None):
         self.callback("before_val_epoch")
         self.model.eval()
@@ -114,7 +110,6 @@ class Trainer:
 
         return self
 
-
     def train(self, max_epochs=None, epoch_len=None, lr=None, accumulation_steps=1, val_epoch_len=None):
 
         print(f"Starting training of {self.additional_params.get('identifier', 'model')}:")
@@ -126,7 +121,7 @@ class Trainer:
                 self.set_up_tensorboard()
             self.state["writer"] = self.writer
 
-        self.state["accumulation_steps"] = accumulation_steps # For gradient accumulation over multiple batches.
+        self.state["accumulation_steps"] = accumulation_steps  # For gradient accumulation over multiple batches.
         current_it = self.state.get("train_it", 0)
 
         # Pseudo epoch len means we trigger validation epoch after a certain number of iterations/batches regardless
@@ -141,7 +136,6 @@ class Trainer:
         if lr is not None:
             for param_group in self.optimiser.param_groups:
                 param_group["lr"] = lr
-
 
         self.callback("before_start")
 
@@ -168,7 +162,6 @@ class Trainer:
 
         return self
 
-
     def get_saveable_state(self):
 
         return {"epoch_no": self.state["epoch_no"],
@@ -177,18 +170,16 @@ class Trainer:
                 "model_class": self.model.__class__.__name__,
                 "optimiser_state_dict": self.optimiser.state_dict()}
 
-
     def save(self, path=None, name=None, **kwargs):
 
         name = self.get_id() if name is None else name
         path = path if path is not None else Path(__file__).parent.parent / "saved_models" / f"{name}.pt"
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        saveable =  self.get_saveable_state()
+        saveable = self.get_saveable_state()
         saveable.update(kwargs)
 
         torch.save(saveable, path)
-
 
     def load(self, identifier=None, load_optimiser=True, exclude_keys=[], dir="saved_models"):
 
@@ -215,10 +206,8 @@ class Trainer:
             self.state["train_it"] = checkpoint["train_it"]
         return self
 
-
     def get_id(self):
         return self.additional_params.get("identifier")
-
 
     def set_data(self, data: Optional[DataDescriptor]):
 
@@ -233,6 +222,3 @@ class Trainer:
         self.train_dataloader = dd.get_dataloader("train")
         self.val_dataloader = dd.get_dataloader("val")
         return self
-
-
-
