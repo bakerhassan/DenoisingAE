@@ -41,8 +41,9 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return res
 
     def get_scores(trainer, batch, median_f=True):
-        batch, slice_idx = batch
         batch = batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda')
+        slice_idxs = torch.linspace(0, batch.shape[0], batch.shape[0])
+        slice_idxs = ((slice_idxs - batch.shape[0] // 2) / batch.shape[0]) * 100
         x = batch
         trainer.model = trainer.model.eval()
         with torch.no_grad():
@@ -53,7 +54,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
             # Erode the mask a bit to remove some of the reconstruction errors at the edges.
             mask = (F.avg_pool2d(mask.float(), kernel_size=5, stride=1, padding=2) > 0.95)
 
-            res = trainer.model(clean, slice_idx)
+            res = trainer.model(clean, slice_idxs)
 
             err = ((clean - res) * mask).abs().mean(dim=1, keepdim=True)
             if median_f:

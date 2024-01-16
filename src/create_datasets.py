@@ -23,7 +23,8 @@ class vol2slice(Dataset):
         subject['vol'].data = subject['vol'].data[..., self.ind]
         subject['mask'].data = subject['mask'].data[..., self.ind]
         subject['label'].data = subject['label'].data[..., self.ind]
-        return subject, self.ind
+        slice_idx = ((self.ind - high // 2) / high) * 100
+        return subject, slice_idx
 
 
 def exclude_empty_slices(image, mask, slice_dim=-1):
