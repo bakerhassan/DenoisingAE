@@ -221,11 +221,14 @@ def patch2loc_features(input: torch.Tensor, patch2loc, slice_idxs, target_shape)
     return reshape_with_padding(features, target_shape)
 
 
-def reshape_with_padding(input: torch.Tensor, target_shape: Tuple[int]):
+def reshape_with_padding(batch_input: torch.Tensor, target_shape: Tuple[int]):
     # calculating padding:
-    padded_input_flat = F.pad(input.flatten(), (0, np.prod(target_shape) - input.numel() % np.prod(target_shape)),
-                              mode='constant', value=0)
-    return padded_input_flat.reshape((input.shape[0], -1,) + target_shape)
+    padded_input = []
+    for input in batch_input:
+        padded_input_flat = F.pad(input.flatten(), (0, np.prod(target_shape) - input.numel() % np.prod(target_shape)),
+                                  mode='constant', value=0)
+        padded_input.append(padded_input_flat.reshape((-1,) + target_shape))
+    return torch.stack(padded_input)
 
 
 def patch_tensor(input_tensor: torch.Tensor, slice_idxs: torch.Tensor) -> torch.Tensor:
