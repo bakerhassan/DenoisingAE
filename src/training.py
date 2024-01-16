@@ -40,6 +40,10 @@ def simple_train_step(trainer, forward, loss_f):
 
 def simple_val_step(trainer, forward, loss_f):
     state = trainer.state
+    batch = state["val_batch"]
+    slice_idx = {}
+    if 'slice_idx' in state:
+        slice_idx['slice_idx'] = state['slice_idx']
     with torch.no_grad():
-        y_pred = forward(trainer, state["val_batch"])
+        y_pred = forward(trainer, state["val_batch"], **slice_idx)
     state["val_batch_result"] = y_pred
