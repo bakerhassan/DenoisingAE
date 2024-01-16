@@ -29,24 +29,22 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
     y_true_ = []
     y_pred_ = []
     counter = 0
-    try:
-        for batch in dataset:
-            with torch.no_grad():
-                anomaly_scores = get_scores(trainer, batch=batch)
-            batch, slice_idx = batch
-            y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
-            y_hat = anomaly_scores.reshape(-1)
-            # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
-            y_true_.append(y_.cpu())
-            y_pred_.append(y_hat.cpu())
+    for batch in dataset:
+        with torch.no_grad():
+            anomaly_scores = get_scores(trainer, batch=batch)
+        batch, slice_idx = batch
+        y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
+        y_hat = anomaly_scores.reshape(-1)
+        # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
+        y_true_.append(y_.cpu())
+        y_pred_.append(y_hat.cpu())
 
-            sub_ap.append(average_precision_score(y_, y_hat))
-            if return_dice and threshold is not None:
-                dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
-            print("done with subject: " ,counter)
-            counter +=1
-    except Exception as e:
-        print(e)
+        sub_ap.append(average_precision_score(y_, y_hat))
+        if return_dice and threshold is not None:
+            dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
+        print("done with subject: " ,counter)
+        counter +=1
+
     y_true_, y_pred_ = torch.cat(y_true_,dim=0).cpu(), torch.cat(y_pred_,dim=0).cpu()
     ap = average_precision_score(y_true_, y_pred_)
     if return_dice:
