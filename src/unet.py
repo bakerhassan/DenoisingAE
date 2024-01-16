@@ -202,8 +202,8 @@ class UNetUpBlock(nn.Module):
 import numpy as np
 
 
-def process_hooks(patch2loc):
-    patch2loc._modules['branch2'][8].register_forward_hook(save_output_feature_hook(key))
+def process_hooks(patch2loc: torch.nn.DataParallel):
+    patch2loc.module._modules['branch2'][8].register_forward_hook(save_output_feature_hook(key))
 
 
 def save_output_feature_hook(self, key):
