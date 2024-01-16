@@ -45,7 +45,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         slice_idxs = torch.linspace(0, batch.shape[0], batch.shape[0])
         slice_idxs = ((slice_idxs - batch.shape[0] // 2) / batch.shape[0]) * 100
         kwargs = {}
-        kwargs['slice_idx'] = slice_idxs
+        kwargs['slice_idx'] = slice_idxs.unsqueeze(1)
         x = batch
         trainer.model = trainer.model.eval()
         with torch.no_grad():
