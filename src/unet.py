@@ -248,5 +248,5 @@ def patch_tensor(input_tensor: torch.Tensor, slice_idxs: torch.Tensor) -> torch.
     patches = transforms.Resize((64, 64), antialias=True)(patches).unsqueeze(1)
 
     kwargs = {}
-    kwargs['position'] = torch.repeat_interleave(input_tensor, repeats=64)
+    kwargs['position'] = torch.repeat_interleave(slice_idxs['slice_idx'], dim=1, repeats=64)
     return patches, kwargs
