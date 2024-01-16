@@ -67,7 +67,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         batch = noise(batch.clone())
         return trainer.model(batch)
 
-    patch2loc_model = patch2loc()
+    patch2loc_model = patch2loc(position_conditional=True)
     patch2loc_model = torch.nn.DataParallel(patch2loc_model)
     patch2loc_model = patch2loc_model.to(device)
     patch2loc_model.load_state_dict(
