@@ -4,6 +4,7 @@ from functools import partial
 from pathlib import Path
 import random
 
+import torchio as tio
 import torch
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -40,6 +41,8 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return res
 
     def get_scores(trainer, batch, median_f=True):
+        batch, slice_idx = batch
+        batch = batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda')
         x = batch
         trainer.model = trainer.model.eval()
         with torch.no_grad():
@@ -50,7 +53,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
             # Erode the mask a bit to remove some of the reconstruction errors at the edges.
             mask = (F.avg_pool2d(mask.float(), kernel_size=5, stride=1, padding=2) > 0.95)
 
-            res = trainer.model(clean)
+            res = trainer.model(clean, slice_idx)
 
             err = ((clean - res) * mask).abs().mean(dim=1, keepdim=True)
             if median_f:
@@ -63,16 +66,17 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         mask = batch.sum(dim=1, keepdim=True) > 0.01
         return (torch.pow(batch_results - y, 2) * mask.float()).mean()
 
-    def forward(trainer, batch,**kwargs):
+    def forward(trainer, batch, **kwargs):
 
         batch = noise(batch.clone())
-        return trainer.model(batch,kwargs)
+        return trainer.model(batch, kwargs)
 
     patch2loc_model = patch2loc(position_conditional=True)
     patch2loc_model = torch.nn.DataParallel(patch2loc_model)
     patch2loc_model = patch2loc_model.to(device)
     patch2loc_model.load_state_dict(
-        torch.load('/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2_conditional:True.pth', map_location=device))
+        torch.load('/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2_conditional:True.pth',
+                   map_location=device))
     for param in patch2loc_model.parameters():
         param.requires_grad = False
     patch2loc_model.eval()
