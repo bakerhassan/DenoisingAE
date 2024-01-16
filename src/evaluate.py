@@ -32,7 +32,6 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
     for batch in dataset:
         with torch.no_grad():
             anomaly_scores = get_scores(trainer, batch=batch)
-        batch, slice_idx = batch
         y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
         y_hat = anomaly_scores.reshape(-1)
         # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
