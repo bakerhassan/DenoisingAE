@@ -41,10 +41,10 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
         sub_ap.append(average_precision_score(y_, y_hat))
         if return_dice and threshold is not None:
             dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
-        print("done with subject: " ,counter)
-        counter +=1
+        print("done with subject: ", counter)
+        counter += 1
 
-    y_true_, y_pred_ = torch.cat(y_true_,dim=0).cpu(), torch.cat(y_pred_,dim=0).cpu()
+    y_true_, y_pred_ = torch.cat(y_true_, dim=0).cpu(), torch.cat(y_pred_, dim=0).cpu()
     ap = average_precision_score(y_true_, y_pred_)
     if return_dice:
         sub_ap_cc, dice_sub_cc = [], []
@@ -63,7 +63,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
             for batch in dataset:
                 with torch.no_grad():
-                    anomaly_scores = get_scores(trainer, batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda'))
+                    anomaly_scores = get_scores(trainer,
+                                                batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda'))
                 y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
                 # Do CC filtering:
                 anomaly_scores_bin = anomaly_scores > threshold
@@ -96,6 +97,8 @@ def evaluate(testing_path: str, eval_testing_path: str, id: str = "model", split
     results = eval_anomalies_batched(trainer, dataset=eval_testing_dataloader, get_scores=trainer.get_scores,
                                      return_dice=True,
                                      filter_cc=False)
+
+    print(f"Done with validation!! Moving to Testing...")
 
     results = eval_anomalies_batched(trainer, dataset=testing_dataloader, get_scores=trainer.get_scores,
                                      return_dice=True,
