@@ -63,8 +63,7 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
             for batch in dataset:
                 with torch.no_grad():
-                    anomaly_scores = get_scores(trainer,
-                                                batch=batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda'))
+                    anomaly_scores = get_scores(trainer, batch=batch)
                 y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
                 # Do CC filtering:
                 anomaly_scores_bin = anomaly_scores > threshold
