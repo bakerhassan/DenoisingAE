@@ -41,6 +41,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return res
 
     def get_scores(trainer, batch, median_f=True):
+        print(batch.keys())
         batch = batch['vol'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).to('cuda')
         slice_idxs = torch.linspace(0, batch.shape[0], batch.shape[0])
         slice_idxs = ((slice_idxs - batch.shape[0] // 2) / batch.shape[0]) * 100
