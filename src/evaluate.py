@@ -28,11 +28,16 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
     dice_thresholds = [x / 1000 for x in range(1000)] if threshold is None else [threshold]
     y_true_ = []
     y_pred_ = []
+    error_maps = []
+    labels = []
     counter = 0
     for batch in dataset:
         with torch.no_grad():
             anomaly_scores = get_scores(trainer, batch=batch)
-        y_ = (batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2).reshape(-1) > 0.5)
+        error_maps.append(anomaly_scores.cpu().numpy())
+        y_ = batch['label'][tio.DATA].squeeze(0).permute(3, 0, 1, 2)
+        labels.append(y_.cpu().numpy())
+        y_ = (y_.reshape(-1) > 0.5)
         y_hat = anomaly_scores.reshape(-1)
         # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
         y_true_.append(y_.cpu())
@@ -43,7 +48,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
             dice_sub.append(dice(y_ > 0.5, y_hat > threshold).cpu().item())
         print("done with subject: ", counter)
         counter += 1
-
+    tmp = {'error_maps': error_maps, 'labels': labels}
+    np.save('/lustre/cniel/DAE_results', tmp)
     y_true_, y_pred_ = torch.cat(y_true_, dim=0).cpu(), torch.cat(y_pred_, dim=0).cpu()
     ap = average_precision_score(y_true_, y_pred_)
     if return_dice:
