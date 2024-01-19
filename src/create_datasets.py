@@ -73,7 +73,7 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
     image_files = sorted([f for f in os.listdir(images_path) if f.endswith('.nii.gz') and f.find('seg') == -1])
 
     # Get a list of corresponding mask files
-    mask_files = sorted([f.replace('t1', 'seg') for f in image_files])
+    mask_files = [f.replace('t1', 'seg') for f in image_files]
     subjects = []
     counter = 0
     for img_file, mask_file in zip(image_files, mask_files):
