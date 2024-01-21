@@ -91,12 +91,12 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
 
 def evaluate(testing_path: str, eval_testing_path: str, id: str = "model", split: str = "test", use_cc: bool = True,
-             patch2loc=False):
+             use_patch2loc=False):
     testing_dataloader = create_dataset(testing_path, False, batch_size=1, num_workers=0)
     eval_testing_dataloader = create_dataset(eval_testing_path, False, batch_size=1, num_workers=0)
     trainer = denoising(id, None, None, lr=0.0001, depth=4,
                         wf=6, noise_std=0.2, noise_res=16,
-                        n_input=1, patch2loc=patch2loc)  # Noise parameters don't matter during evaluation.
+                        n_input=1, use_patch2loc=use_patch2loc)  # Noise parameters don't matter during evaluation.
 
     trainer.load(id)
 
@@ -145,4 +145,4 @@ if __name__ == "__main__":
              id=args.identifier,
              split=args.split,
              use_cc=args.use_cc,
-             patch2loc=args.patch2loc)
+             use_patch2loc=args.patch2loc)

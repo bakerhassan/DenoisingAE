@@ -21,7 +21,7 @@ from src.patch2loc import patch2loc
 
 def denoising(identifier: str, training_dataloader: DataLoader = None, validation_dataloader: DataLoader = None,
               lr=0.001, depth=4,
-              wf=7, n_input=4, noise_std=0.2, noise_res=16, patch2loc=False):
+              wf=7, n_input=4, noise_std=0.2, noise_res=16, use_patch2loc=False):
     device = torch.device("cuda")
 
     def noise(x):
@@ -75,7 +75,7 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         return trainer.model(batch, kwargs)
 
     patch2loc_model = None
-    if patch2loc:
+    if use_patch2loc:
         patch2loc_model = patch2loc(position_conditional=True)
         patch2loc_model = torch.nn.DataParallel(patch2loc_model)
         patch2loc_model = patch2loc_model.to(device)
@@ -124,11 +124,11 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
 
 
 def train(trainin_path: str, evaluation_path: str, id: str = "model", noise_res: int = 16, noise_std: float = 0.2,
-          seed: int = 0, batch_size: int = 16, patch2loc=False):
+          seed: int = 0, batch_size: int = 16, use_patch2loc=False):
     training_dataloader = create_dataset(trainin_path, True, batch_size, num_workers=1)
     eval_dataloader = create_dataset(evaluation_path, True, batch_size, num_workers=1)
     trainer = denoising(id, training_dataloader, eval_dataloader, lr=0.0001, depth=4,
-                        wf=6, noise_std=noise_std, noise_res=noise_res, n_input=1, patch2loc=patch2loc)
+                        wf=6, noise_std=noise_std, noise_res=noise_res, n_input=1, use_patch2loc=use_patch2loc)
 
     trainer.train(epoch_len=32, max_epochs=2100, val_epoch_len=32)
 
@@ -160,4 +160,4 @@ if __name__ == "__main__":
         noise_std=args.noise_std,
         seed=args.seed,
         batch_size=args.batch_size,
-        patch2loc=args.patch2loc)
+        use_patch2loc=args.patch2loc)

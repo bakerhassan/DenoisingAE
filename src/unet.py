@@ -98,8 +98,8 @@ class UNet(nn.Module):
         self.up_path = nn.ModuleList()
         for i in reversed(range(depth - 1)):
             if self.patch2loc is not None and i == depth - 2:
-                num_channels = 2 ** (wf + i) + 3
-                prev_channels += 3
+                num_channels = 2 ** (wf + i) + 147
+                prev_channels += 147
             else:
                 num_channels = 2 ** (wf + i)
             self.up_path.append(
