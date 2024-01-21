@@ -21,7 +21,7 @@ from src.patch2loc import patch2loc
 
 def denoising(identifier: str, training_dataloader: DataLoader = None, validation_dataloader: DataLoader = None,
               lr=0.001, depth=4,
-              wf=7, n_input=4, noise_std=0.2, noise_res=16):
+              wf=7, n_input=4, noise_std=0.2, noise_res=16, patch2loc=False):
     device = torch.device("cuda")
 
     def noise(x):
@@ -74,15 +74,17 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
         batch = noise(batch.clone())
         return trainer.model(batch, kwargs)
 
-    patch2loc_model = patch2loc(position_conditional=True)
-    patch2loc_model = torch.nn.DataParallel(patch2loc_model)
-    patch2loc_model = patch2loc_model.to(device)
-    patch2loc_model.load_state_dict(
-        torch.load('/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2_conditional:True.pth',
-                   map_location=device))
-    for param in patch2loc_model.parameters():
-        param.requires_grad = False
-    patch2loc_model.eval()
+    patch2loc_model = None
+    if patch2loc:
+        patch2loc_model = patch2loc(position_conditional=True)
+        patch2loc_model = torch.nn.DataParallel(patch2loc_model)
+        patch2loc_model = patch2loc_model.to(device)
+        patch2loc_model.load_state_dict(
+            torch.load('/home/2063/resnet_data:brats_aug:True_beta:1_loss:beta_nll_target_dim:2_conditional:True.pth',
+                       map_location=device))
+        for param in patch2loc_model.parameters():
+            param.requires_grad = False
+        patch2loc_model.eval()
     model = UNet(in_channels=n_input, n_classes=n_input, norm="group", up_mode="upconv", depth=depth, wf=wf,
                  padding=True, patch2loc=patch2loc_model).to(device)
 
@@ -122,11 +124,11 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
 
 
 def train(trainin_path: str, evaluation_path: str, id: str = "model", noise_res: int = 16, noise_std: float = 0.2,
-          seed: int = 0, batch_size: int = 16):
+          seed: int = 0, batch_size: int = 16, patch2loc=False):
     training_dataloader = create_dataset(trainin_path, True, batch_size, num_workers=1)
     eval_dataloader = create_dataset(evaluation_path, True, batch_size, num_workers=1)
     trainer = denoising(id, training_dataloader, eval_dataloader, lr=0.0001, depth=4,
-                        wf=6, noise_std=noise_std, noise_res=noise_res, n_input=1)
+                        wf=6, noise_std=noise_std, noise_res=noise_res, n_input=1, patch2loc=patch2loc)
 
     trainer.train(epoch_len=32, max_epochs=2100, val_epoch_len=32)
 
@@ -144,6 +146,10 @@ if __name__ == "__main__":
                         help="training path")
     parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data',
                         help="evaluation path.")
+
+    parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,
+                        help="use patch2loc")
+
     args = parser.parse_args()
 
     train(
@@ -153,4 +159,5 @@ if __name__ == "__main__":
         noise_res=args.noise_res,
         noise_std=args.noise_std,
         seed=args.seed,
-        batch_size=args.batch_size)
+        batch_size=args.batch_size,
+        patch2loc=args.patch2loc)
