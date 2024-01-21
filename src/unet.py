@@ -210,7 +210,7 @@ import numpy as np
 
 
 def process_hooks(patch2loc: torch.nn.DataParallel):
-    patch2loc.module._modules['branch2'][8].register_forward_hook(save_output_feature_hook())
+    patch2loc.module._modules['net'].fc.register_forward_hook(save_output_feature_hook())
 
 
 def save_output_feature_hook():
