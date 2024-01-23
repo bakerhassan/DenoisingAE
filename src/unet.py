@@ -98,7 +98,7 @@ class UNet(nn.Module):
         self.up_path = nn.ModuleList()
         for i in reversed(range(depth - 1)):
             if self.patch2loc is not None and i == depth - 2:
-                num_channels = 2 ** (wf + i) + 146
+                num_channels = 2 ** (wf + i)
                 prev_channels += 146
             else:
                 num_channels = 2 ** (wf + i)
@@ -188,7 +188,7 @@ class UNetUpBlock(nn.Module):
                 nn.Conv2d(in_size, out_size, kernel_size=1),
             )
 
-        self.conv_block = UNetConvBlock(in_size, out_size, padding, norm=norm)
+        self.conv_block = UNetConvBlock(out_size*2, out_size, padding, norm=norm)
 
     def center_crop(self, layer, target_size):
         _, _, layer_height, layer_width = layer.size()
