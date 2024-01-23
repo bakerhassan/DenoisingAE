@@ -121,13 +121,12 @@ class UNet(nn.Module):
             features = patch2loc_features(input, self.patch2loc, slice_idxs, x.shape[-2:])
             features = features.to(x)
             x = torch.cat([x, features], dim=1)
+            blocks[-1] = x
         return x, blocks
 
     def forward_up_without_last(self, x, blocks):
         for i, up in enumerate(self.up_path):
             skip = blocks[-i - 2]
-            if self.patch2loc is not None and i == 1:
-                skip = torch.cat([skip, torch.zeros((skip.shape[0], 146, skip.shape[2], skip.shape[3])).to(skip)], dim=1)
             x = up(x, skip)
 
         return x
