@@ -97,6 +97,7 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
             label = transforms.Resize((240, 240))(label)
         else:
             image = exclude_empty_slices(image)
+        image = image[None, ...]
         image = transforms.Resize((240, 240))(image)
         brain_mask = (image > .001)
         subject_dict = {'vol': tio.ScalarImage(tensor=image), 'name': img_file,
