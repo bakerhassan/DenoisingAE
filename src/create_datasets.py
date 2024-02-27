@@ -70,8 +70,7 @@ def exclude_abnomral_slices(image, mask, slice_dim=-1):
 def get_transform():
     return tio.Compose([
         tio.RescaleIntensity((0, 1), percentiles=(1, 99),
-                             masking_method='mask'),
-        tio.transforms.Resize((240, 240))
+                             masking_method='mask')
     ])
 
 
@@ -95,9 +94,11 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
             image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
         if abnormal_data:
             image, label = exclude_empty_slices(image, label)
+            label = transforms.Resize((240, 240))(label)
         else:
             image = exclude_empty_slices(image)
         image = image[None, ...]
+        image = transforms.Resize((240, 240))(image)
         brain_mask = (image > .001)
         subject_dict = {'vol': tio.ScalarImage(tensor=image), 'name': img_file,
                         'label': label,
