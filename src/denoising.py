@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("-bs", "--batch_size", type=int, default=16, help="model training batch size")
     parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/ds003097-derivative',
                         help="training path")
-    parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/ds003097-derivative/eval',
+    parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/ds003097-derivative/heldout',
                         help="evaluation path.")
 
     parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,
