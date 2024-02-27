@@ -72,7 +72,8 @@ def get_transform():
     ])
 
 
-def create_dataset(images_path: str, training: bool, batch_size: int, num_workers: int = 1, exclude_abnormal=False):
+def create_dataset(images_path: str, training: bool, batch_size: int, num_workers: int = 1, abnormal_data=False,
+                   exclude_abnormal=False):
     # Get a list of image files
     image_files = sorted([f for f in os.listdir(images_path) if f.endswith('.nii.gz') and f.find('seg') == -1])
 
@@ -84,12 +85,12 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
         # Read MRI images using tio
         sub = tio.ScalarImage(os.path.join(images_path, img_file), reader=sitk_reader)
         label = None
-        if os.path.exists(os.path.join(images_path, mask_file)):
+        if abnormal_data:
             label = tio.LabelMap(os.path.join(images_path, mask_file))
         image = sub.data[0].float()
         if exclude_abnormal:
             image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
-        if label is not None:
+        if abnormal_data:
             image, label = exclude_empty_slices(image, label)
         else:
             image = exclude_empty_slices(image)
