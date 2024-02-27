@@ -19,7 +19,7 @@ class vol2slice(Dataset):
         subject = self.ds.__getitem__(index)
         low = 0
         high = subject['vol'].data.shape[-1]
-        self.ind = torch.randint(low, high, size=[1]).item()
+        self.ind = torch.randint(low, high, size=[1])
         subject['ind'] = self.ind
         subject['vol'].data = subject['vol'].data[..., self.ind]
         subject['mask'].data = subject['mask'].data[..., self.ind]
