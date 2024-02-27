@@ -27,17 +27,21 @@ class vol2slice(Dataset):
         return subject, slice_idx
 
 
-def exclude_empty_slices(image, mask, slice_dim=-1):
+def exclude_empty_slices(image, mask=None, slice_dim=-1):
     slices = []
     mask_slices = []
     if slice_dim == -1:
         for i in range(image.shape[slice_dim]):
             if (image[..., i] > .0001).float().mean() >= .05:
                 slices.append(image[..., i])
-                mask_slices.append(mask[..., i])
+                if mask is not None:
+                    mask_slices.append(mask[..., i])
     else:
         raise NotImplementedError(f'slice_dim = {slice_dim} is not supported')
-    return torch.stack(slices).permute((1, 2, 0)), torch.stack(mask_slices).permute((1, 2, 0))
+    if mask is not None:
+        return torch.stack(slices).permute((1, 2, 0)), torch.stack(mask_slices).permute((1, 2, 0))
+    else:
+        return torch.stack(slices).permute((1, 2, 0))
 
 
 def sitk_reader(path):
@@ -68,7 +72,7 @@ def get_transform():
     ])
 
 
-def create_dataset(images_path: str, training: bool, batch_size: int, num_workers: int = 1):
+def create_dataset(images_path: str, training: bool, batch_size: int, num_workers: int = 1, exclude_abnormal=False):
     # Get a list of image files
     image_files = sorted([f for f in os.listdir(images_path) if f.endswith('.nii.gz') and f.find('seg') == -1])
 
@@ -79,18 +83,20 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
     for img_file, mask_file in zip(image_files, mask_files):
         # Read MRI images using tio
         sub = tio.ScalarImage(os.path.join(images_path, img_file), reader=sitk_reader)
-        label = tio.LabelMap(os.path.join(images_path, mask_file))
+        label = None
+        if os.path.exists(os.path.join(images_path, mask_file)):
+            label = tio.LabelMap(os.path.join(images_path, mask_file))
 
-        if training:
+        if exclude_abnormal:
             image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
+        if label is not None:
             image, label = exclude_empty_slices(image, label)
         else:
-            image, label = exclude_empty_slices(sub.data[0].float(), label.data[0].float())
+            image = exclude_empty_slices(sub.data[0].float())
         image = image[None, ...]
-        label = label[None, ...]
         brain_mask = (image > .001)
         subject_dict = {'vol': tio.ScalarImage(tensor=image), 'name': img_file,
-                        'label': tio.LabelMap(tensor=label),
+                        'label': label,
                         'mask': tio.LabelMap(tensor=brain_mask)}
         subject = tio.Subject(subject_dict)
         subjects.append(subject)

@@ -142,9 +142,9 @@ if __name__ == "__main__":
     parser.add_argument("-ns", "--noise_std", type=float, default=0.2, help="noise magnitude.")
     parser.add_argument("-s", "--seed", type=int, default=0, help="random seed.")
     parser.add_argument("-bs", "--batch_size", type=int, default=16, help="model training batch size")
-    parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/val',
+    parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/ds003097-derivative',
                         help="training path")
-    parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data',
+    parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/ds003097-derivative/eval',
                         help="evaluation path.")
 
     parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,

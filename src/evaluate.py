@@ -104,7 +104,7 @@ def evaluate(testing_path: str, eval_testing_path: str, id: str = "model", split
                                      return_dice=True,
                                      filter_cc=False)
 
-    print(f"Done with validation!! Moving to Testing...")
+    print(f"Done with validation!! Moving to Testing... Thresholds are: {results[2]}")
 
     results = eval_anomalies_batched(trainer, dataset=testing_dataloader, get_scores=trainer.get_scores,
                                      return_dice=True,
