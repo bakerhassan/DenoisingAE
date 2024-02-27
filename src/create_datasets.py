@@ -22,7 +22,8 @@ class vol2slice(Dataset):
         subject['ind'] = self.ind
         subject['vol'].data = subject['vol'].data[..., self.ind]
         subject['mask'].data = subject['mask'].data[..., self.ind]
-        subject['label'].data = subject['label'].data[..., self.ind]
+        if subject['label'] is not None:
+            subject['label'].data = subject['label'].data[..., self.ind]
         slice_idx = ((self.ind - high // 2) / high) * 100
         return subject, slice_idx
 
