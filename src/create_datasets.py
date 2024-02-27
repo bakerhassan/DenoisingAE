@@ -4,6 +4,7 @@ import os
 import torch
 from torch.utils.data import DataLoader, Dataset
 import SimpleITK as sitk
+import torchvision.transforms as transforms
 
 
 class vol2slice(Dataset):
@@ -23,7 +24,7 @@ class vol2slice(Dataset):
         subject['vol'].data = subject['vol'].data[..., self.ind]
         subject['mask'].data = subject['mask'].data[..., self.ind]
         if subject['label'] is None:
-           del subject['label']
+            del subject['label']
         slice_idx = ((self.ind - high // 2) / high) * 100
         return subject, slice_idx
 
@@ -69,7 +70,8 @@ def exclude_abnomral_slices(image, mask, slice_dim=-1):
 def get_transform():
     return tio.Compose([
         tio.RescaleIntensity((0, 1), percentiles=(1, 99),
-                             masking_method='mask')
+                             masking_method='mask'),
+        tio.transforms.Resize((240, 240))
     ])
 
 
