@@ -86,13 +86,13 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
         label = None
         if os.path.exists(os.path.join(images_path, mask_file)):
             label = tio.LabelMap(os.path.join(images_path, mask_file))
-
+        image = sub.data[0].float()
         if exclude_abnormal:
             image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
         if label is not None:
             image, label = exclude_empty_slices(image, label)
         else:
-            image = exclude_empty_slices(sub.data[0].float())
+            image = exclude_empty_slices(image)
         image = image[None, ...]
         brain_mask = (image > .001)
         subject_dict = {'vol': tio.ScalarImage(tensor=image), 'name': img_file,
