@@ -89,14 +89,14 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
         # Read MRI images using tio
         sub = tio.ScalarImage(os.path.join(images_path, img_file), reader=sitk_reader)
         label = None
+        image = sub.data[0].float()
         if abnormal_data:
             label = tio.LabelMap(os.path.join(images_path, mask_file))
-        image = sub.data[0].float()
-        if exclude_abnormal:
-            image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
-        if abnormal_data:
-            image, label = exclude_empty_slices(image, label)
+            if exclude_abnormal:
+                image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
+            image, label = exclude_empty_slices(image, label.data[0].float())
             label = transforms.Resize((240, 240))(label)
+            label = tio.LabelMap(label)
         else:
             image = exclude_empty_slices(image)
         image = image[None, ...]
