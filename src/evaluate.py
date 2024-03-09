@@ -128,7 +128,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-id", "--identifier", default='model', type=str, help="identifier for model to evaluate")
+    parser.add_argument("-id", "--identifier", default='healthy', type=str, help="identifier for model to evaluate")
     parser.add_argument("-s", "--split", default='test', type=str, help="'train', 'val' or 'test'")
     parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
                         help="Whether to use connected component filtering.")
