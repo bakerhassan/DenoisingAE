@@ -40,8 +40,8 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
         y_ = (y_.reshape(-1) > 0.5)
         y_hat = anomaly_scores.reshape(-1)
         # Use half precision to save space in RAM. Want to evaluate the whole dataset at once.
-        y_true_.append(y_.cpu())
-        y_pred_.append(y_hat.cpu())
+        y_true_.append(y_.cpu().half())
+        y_pred_.append(y_hat.cpu().half())
 
         sub_ap.append(average_precision_score(y_, y_hat))
         if return_dice and threshold is not None:
@@ -50,6 +50,7 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
         counter += 1
     tmp = {'error_maps': error_maps, 'labels': labels}
     np.save('/lustre/cniel/DAE_results', tmp)
+    del tmp
     y_true_, y_pred_ = torch.cat(y_true_, dim=0).cpu(), torch.cat(y_pred_, dim=0).cpu()
     ap = average_precision_score(y_true_, y_pred_)
     if return_dice:
