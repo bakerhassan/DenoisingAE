@@ -134,8 +134,8 @@ if __name__ == "__main__":
     parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
                         help="Whether to use connected component filtering.")
     parser.add_argument("-te", "--eval_testing_path", type=str,
-                        default='/lustre/cniel/BraTS2021_Training_Data/heldout/val/registered', help="eval testing path")
-    parser.add_argument("-tp", "--testing_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/heldout/registered',
+                        default='/lustre/cniel/BraTS2021_Training_Data/heldout/val', help="eval testing path")
+    parser.add_argument("-tp", "--testing_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/heldout',
                         help="testing path")
     parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,
                         help="use patch2loc")
