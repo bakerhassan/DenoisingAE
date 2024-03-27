@@ -148,7 +148,7 @@ if __name__ == "__main__":
                         default='/lustre/cniel/BraTS2021_Training_Data/heldout/', help="eval testing path")
     parser.add_argument("-tp", "--testing_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/heldout',
                         help="testing path")
-    parser.add_argument("-split_num", "--split_number", type=int, default=1,
+    parser.add_argument("-split_num", "--split_num", type=int, default=1,
                         help="which split number to use (if any)")
     parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,
                         help="use patch2loc")
