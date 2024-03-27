@@ -1,4 +1,5 @@
 #  Copyright (C) 2022 Canon Medical Systems Corporation. All rights reserved
+import os
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -14,7 +15,7 @@ from src.create_datasets import create_dataset
 from src.training import simple_train_step, simple_val_step
 from src.metrics import Loss
 from src.trainer import Trainer
-from src.utilities import median_pool, ModelSaver
+from src.utilities import median_pool, ModelSaver, load_splits
 from src.unet import UNet
 from src.patch2loc import patch2loc
 
@@ -124,9 +125,18 @@ def denoising(identifier: str, training_dataloader: DataLoader = None, validatio
 
 
 def train(trainin_path: str, evaluation_path: str, id: str = "model", noise_res: int = 16, noise_std: float = 0.2,
-          seed: int = 0, batch_size: int = 16, use_patch2loc=False):
-    training_dataloader = create_dataset(trainin_path, True, batch_size, num_workers=1)
-    eval_dataloader = create_dataset(evaluation_path, True, batch_size, num_workers=1)
+          seed: int = 0, batch_size: int = 16, split_num=1, use_patch2loc=False):
+    split_file = f'split_{split_num}.pkl'  # Update with the path to the split file you want to load
+    val_files = train_files = None
+    if os.path.exists(trainin_path + '/' + split_file):
+        split_info = load_splits(trainin_path + '/' + split_file)
+        train_files = split_info['train']
+        val_files = train_files[-int(.1 * len(train_files)):]
+        train_files = train_files[:-int(.1 * len(train_files))]
+    training_dataloader = create_dataset(trainin_path, True, batch_size, num_workers=1, image_files=train_files,
+                                         abnormal_data=True, exclude_abnormal=True)
+    eval_dataloader = create_dataset(evaluation_path, True, batch_size, num_workers=1, image_files=val_files,
+                                     abnormal_data=True, exclude_abnormal=True)
     trainer = denoising(id, training_dataloader, eval_dataloader, lr=0.0001, depth=4,
                         wf=6, noise_std=noise_std, noise_res=noise_res, n_input=1, use_patch2loc=use_patch2loc)
 
@@ -144,12 +154,14 @@ if __name__ == "__main__":
     parser.add_argument("-bs", "--batch_size", type=int, default=16, help="model training batch size")
     parser.add_argument("-tp", "--training_path", type=str, default='/lustre/cniel/data/mixed_scanners/registered',
                         help="training path")
-    parser.add_argument("-ep", "--evaluation_path", type=str, default='/lustre/cniel/data/mixed_scanners/registered/heldout',
+    parser.add_argument("-ep", "--evaluation_path", type=str,
+                        default='/lustre/cniel/BraTS2021_Training_Data/heldout/',
                         help="evaluation path.")
 
     parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,
                         help="use patch2loc")
-
+    parser.add_argument("-split_num", "--split_number", type=int, default=1,
+                        help="which split number to use (if any)")
     args = parser.parse_args()
 
     train(
@@ -159,5 +171,6 @@ if __name__ == "__main__":
         noise_res=args.noise_res,
         noise_std=args.noise_std,
         seed=args.seed,
+        split_num=args.split_num,
         batch_size=args.batch_size,
         use_patch2loc=args.patch2loc)
