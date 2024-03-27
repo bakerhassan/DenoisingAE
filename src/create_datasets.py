@@ -95,7 +95,9 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
             label = tio.LabelMap(os.path.join(images_path, mask_file))
             if exclude_abnormal:
                 image, label = exclude_abnomral_slices(sub.data[0].float(), label.data[0].float())
-            image, label = exclude_empty_slices(image, label.data[0].float())
+                image, label = exclude_empty_slices(image, label)
+            else:
+                image, label = exclude_empty_slices(sub.data[0].float(), label.data[0].float())
             label = transforms.Resize((240, 240))(label.permute(2, 0, 1)).permute(1, 2, 0)
             label = label[None, ...]
             label = tio.LabelMap(tensor=label)
