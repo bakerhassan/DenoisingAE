@@ -26,7 +26,7 @@ class vol2slice(Dataset):
         if subject['label'] is None:
             del subject['label']
         else:
-            subject['mask'].data = subject['mask'].data[..., self.ind]
+            subject['label'].data = subject['label'].data[..., self.ind]
         slice_idx = ((self.ind - high // 2) / high) * 100
         return subject, slice_idx
 
@@ -90,7 +90,6 @@ def create_dataset(images_path: str, training: bool, batch_size: int, num_worker
         # Read MRI images using tio
         sub = tio.ScalarImage(os.path.join(images_path, img_file), reader=sitk_reader)
         label = None
-        image = sub.data[0].float()
         if abnormal_data:
             label = tio.LabelMap(os.path.join(images_path, mask_file))
             if exclude_abnormal:
