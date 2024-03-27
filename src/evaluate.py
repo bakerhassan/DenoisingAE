@@ -1,4 +1,5 @@
 #  Copyright (C) 2022 Canon Medical Systems Corporation. All rights reserved
+import os
 from math import ceil
 
 import numpy as np
@@ -11,6 +12,7 @@ from src.denoising import denoising
 from src.data import BrainDataset
 from src.cc_filter import connected_components_3d
 from src.create_datasets import create_dataset
+from src.utilities import load_splits
 
 
 def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshold=None,
@@ -92,9 +94,18 @@ def eval_anomalies_batched(trainer, dataset, get_scores, batch_size=32, threshol
 
 
 def evaluate(testing_path: str, eval_testing_path: str, id: str = "model", split: str = "test", use_cc: bool = True,
+             split_num=1,
              use_patch2loc=False):
-    testing_dataloader = create_dataset(testing_path, False, batch_size=1, num_workers=0, abnormal_data=True)
-    eval_testing_dataloader = create_dataset(eval_testing_path, False, batch_size=1, num_workers=0, abnormal_data=True)
+    split_file = f'split_{split_num}.pkl'  # Update with the path to the split file you want to load
+    val_files = test_files = None
+    if os.path.exists(testing_path + '/' + split_file):
+        split_info = load_splits(testing_path + '/' + split_file)
+        val_files = split_info['val']
+        test_files = split_info['test']
+    testing_dataloader = create_dataset(testing_path, False, batch_size=1, num_workers=0, image_files=test_files,
+                                        abnormal_data=True)
+    eval_testing_dataloader = create_dataset(eval_testing_path, False, batch_size=1, num_workers=0,
+                                             image_files=val_files, abnormal_data=True)
     trainer = denoising(id, None, None, lr=0.0001, depth=4,
                         wf=6, noise_std=0.2, noise_res=16,
                         n_input=1, use_patch2loc=use_patch2loc)  # Noise parameters don't matter during evaluation.
@@ -134,9 +145,11 @@ if __name__ == "__main__":
     parser.add_argument("-cc", "--use_cc", required=False, type=bool, default=True,
                         help="Whether to use connected component filtering.")
     parser.add_argument("-te", "--eval_testing_path", type=str,
-                        default='/lustre/cniel/BraTS2021_Training_Data/heldout/val', help="eval testing path")
+                        default='/lustre/cniel/BraTS2021_Training_Data/heldout/', help="eval testing path")
     parser.add_argument("-tp", "--testing_path", type=str, default='/lustre/cniel/BraTS2021_Training_Data/heldout',
                         help="testing path")
+    parser.add_argument("-split_num", "--split_number", type=int, default=1,
+                        help="which split number to use (if any)")
     parser.add_argument("-patch2loc", "--patch2loc", type=bool, default=False,
                         help="use patch2loc")
     args = parser.parse_args()
@@ -146,4 +159,5 @@ if __name__ == "__main__":
              id=args.identifier,
              split=args.split,
              use_cc=args.use_cc,
+             split_num=args.split_num,
              use_patch2loc=args.patch2loc)

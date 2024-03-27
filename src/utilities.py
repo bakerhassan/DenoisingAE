@@ -1,4 +1,6 @@
 #  Copyright (C) 2022 Canon Medical Systems Corporation. All rights reserved
+import pickle
+
 import torch
 from torch.nn.modules.utils import _pair, _quadruple
 import torch.nn.functional as F
@@ -56,3 +58,8 @@ def median_pool(x, kernel_size=3, stride=1, padding=0):
     x = x.contiguous().view(x.size()[:4] + (-1,)).median(dim=-1)[0]
 
     return x
+
+def load_splits(split_file):
+    with open(split_file, 'rb') as f:
+        split_info = pickle.load(f)
+    return split_info
